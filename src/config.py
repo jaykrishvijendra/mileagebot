@@ -12,7 +12,7 @@ SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
 MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-# Sheet layout constants (confirmed from inspect_sheet.py)
+# Sheet layout constants (confirmed from inspect_sheet.py)w
 DATA_START_ROW = 9    # first entry row — S/N 1 is at row 9 (after 8 header rows)
 DATA_END_ROW = 36     # last entry row — S/N 28 at row 36
 COL_SN = "A"
