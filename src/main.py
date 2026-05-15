@@ -1,4 +1,8 @@
+import asyncio
 import logging
+import os
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from telegram import BotCommand, MenuButtonCommands
 from telegram.ext import Application, ApplicationBuilder, CommandHandler
@@ -15,14 +19,30 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
+class _HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"ok")
+
+    def log_message(self, *args):
+        pass
+
+
+def _start_health_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), _HealthHandler)
+    log.info("Health check server on port %d", port)
+    server.serve_forever()
+
+
 async def _post_init(application: Application) -> None:
-    """Register commands + menu button (Telegram shows these next to / and in the chat menu)."""
     commands = [
         BotCommand("start", "Welcome and command list"),
         BotCommand("register", "Link your Google Sheet"),
         BotCommand("add", "Log a driving entry"),
         BotCommand("totals", "Totals for current month"),
-        BotCommand("totals_all", "Totals for all month tabs"),
+        BotCommand("totals_all", "Totals for all months"),
         BotCommand("help", "Help"),
         BotCommand("cancel", "Cancel registration or entry"),
     ]
@@ -30,7 +50,7 @@ async def _post_init(application: Application) -> None:
     await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
 
 
-def main():
+async def _run_bot():
     app = (
         ApplicationBuilder()
         .token(TELEGRAM_BOT_TOKEN)
@@ -45,8 +65,16 @@ def main():
     app.add_handler(CommandHandler("totals", cmd_totals))
     app.add_handler(CommandHandler("totals_all", cmd_totals_all))
 
-    log.info("Bot started (per-user spreadsheets via /register).")
-    app.run_polling()
+    log.info("Bot started.")
+    async with app:
+        await app.start()
+        await app.updater.start_polling()
+        await asyncio.Event().wait()  # run forever
+
+
+def main():
+    threading.Thread(target=_start_health_server, daemon=True).start()
+    asyncio.run(_run_bot())
 
 
 if __name__ == "__main__":
