@@ -50,6 +50,14 @@ async def _post_init(application: Application) -> None:
     await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
 
 
+async def _error_handler(update, context):
+    log.exception("Unhandled error", exc_info=context.error)
+    if update and update.effective_message:
+        await update.effective_message.reply_text(
+            f"❌ Internal error: {context.error}"
+        )
+
+
 async def _run_bot():
     app = (
         ApplicationBuilder()
@@ -58,6 +66,7 @@ async def _run_bot():
         .build()
     )
 
+    app.add_error_handler(_error_handler)
     app.add_handler(build_register_handler())
     app.add_handler(build_conversation_handler())
     app.add_handler(CommandHandler("start", cmd_start))

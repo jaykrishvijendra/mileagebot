@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from pathlib import Path
 
@@ -14,8 +15,14 @@ _email_cache: str | None = None
 def service_account_email() -> str:
     global _email_cache
     if _email_cache is None:
-        data = json.loads(Path(GOOGLE_CREDS_PATH).read_text(encoding="utf-8"))
-        _email_cache = data["client_email"]
+        try:
+            data = json.loads(Path(GOOGLE_CREDS_PATH).read_text(encoding="utf-8"))
+            _email_cache = data["client_email"]
+        except Exception:
+            _email_cache = os.environ.get(
+                "SERVICE_ACCOUNT_EMAIL",
+                "(service account email not found — check GOOGLE_CREDS_PATH)"
+            )
     return _email_cache
 
 
